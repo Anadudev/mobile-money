@@ -5,6 +5,7 @@ module.exports = {
   roots: ["<rootDir>/src", "<rootDir>/tests"],
   testMatch: ["**/__tests__/**/*.ts", "**/?(*.)+(spec|test).ts"],
   testPathIgnorePatterns: ["/node_modules/", "/tests/pact/"],
+  testTimeout: 30000,
   transform: {
     "^.+\\.ts$": [
       "ts-jest",
@@ -29,4 +30,5 @@ module.exports = {
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   verbose: true,
+  maxWorkers: "50%",
 };

@@ -155,13 +155,15 @@ jobs:
         continue-on-error: true
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: npm run test:coverage -- --maxWorkers=2 --forceExit
+        timeout-minutes: 10
         continue-on-error: true
         env:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
           STELLAR_ISSUER_SECRET: S-DUMMY-SECRET-KEY-FOR-TESTING-PURPOSES-ONLY
           NODE_ENV: test
+          CI: true
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

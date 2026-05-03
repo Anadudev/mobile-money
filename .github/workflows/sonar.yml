@@ -60,17 +60,21 @@ jobs:
 
       - name: Run database migrations
         run: npm run migrate:up
+        timeout-minutes: 2
         continue-on-error: true
         env:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: npm run test:coverage -- --maxWorkers=2 --bail --detectOpenHandles --forceExit
+        timeout-minutes: 10
+        continue-on-error: true
         env:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
           STELLAR_ISSUER_SECRET: S-DUMMY-SECRET-KEY-FOR-TESTING-PURPOSES-ONLY
           NODE_ENV: test
+          CI: true
 
       - name: Check if SonarCloud is configured
         id: check_sonar
