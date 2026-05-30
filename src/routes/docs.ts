@@ -46,22 +46,28 @@ docsRouter.get('/openapi.json', devOnly, (_req: Request, res: Response) => {
 if (isDev) {
   const spec = generateOpenAPIDocument();
 
+  // Determine whether to serve Swagger UI assets via CDN or locally based on environment variable
+  const useCdn = process.env.SWAGGER_CDN === 'true';
+
+  const swaggerOptions = {
+    customSiteTitle: 'Mobile Money Bridge — API Docs',
+    ...(useCdn && {
+      customCssUrl: 'https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css',
+      customJs: 'https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-bundle.js',
+    }),
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      tryItOutEnabled: true,
+    },
+  };
+
   docsRouter.use(
     '/',
     devOnly,
     swaggerUi.serve,
-    swaggerUi.setup(spec, {
-      customSiteTitle: 'Mobile Money Bridge — API Docs',
-      // Use CDN for Swagger UI assets to improve load performance
-      customCssUrl: 'https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css',
-      customJs: 'https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-bundle.js',
-      swaggerOptions: {
-        persistAuthorization: true,
-        displayRequestDuration: true,
-        filter: true,
-        tryItOutEnabled: true,
-      },
-    })
+    swaggerUi.setup(spec, swaggerOptions)
   );
 } else {
   // In non-dev environments the route still exists but devOnly will 404 it.
