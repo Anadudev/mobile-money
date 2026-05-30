@@ -49,6 +49,9 @@ pub struct EscrowState {
     /// Gross amount locked in escrow (before fee deduction).
     pub amount: i128,
     pub emergency_unlock_timestamp: u64,
+    pub lock_until_ledger: u32,
+    pub fee_bps: u32,
+    pub fee_recipient: Address,
     pub released: bool,
 }
 
@@ -89,6 +92,9 @@ impl EscrowContract {
         token: Address,
         amount: i128,
         emergency_unlock_timestamp: u64,
+        lock_until_ledger: u32,
+        fee_bps: u32,
+        fee_recipient: Address,
     ) {
         depositor.require_auth();
 
@@ -101,6 +107,9 @@ impl EscrowContract {
             emergency_unlock_timestamp > env.ledger().timestamp(),
             "emergency unlock must be in the future"
         );
+        assert!(fee_bps <= 10_000, "fee basis points must be in [0, 10000]");
+        assert!(depositor != beneficiary, "beneficiary must differ from depositor");
+        assert!(arbiter != depositor && arbiter != beneficiary, "arbiter must differ from depositor and beneficiary");
 
         // Pull funds from depositor into the contract.
         token::Client::new(&env, &token)
@@ -115,6 +124,9 @@ impl EscrowContract {
                 token,
                 amount,
                 emergency_unlock_timestamp,
+                lock_until_ledger,
+                fee_bps,
+                fee_recipient,
                 released: false,
             },
         );
@@ -159,6 +171,7 @@ impl EscrowContract {
         env.storage().instance().set(&ESCROW, &state);
 
         env.storage().instance().extend_ttl(1000, 10000);
+        Ok(())
     }
 
     // ── refund ────────────────────────────────────────────────────────────────
@@ -190,6 +203,7 @@ impl EscrowContract {
         env.storage().instance().set(&ESCROW, &state);
 
         env.storage().instance().extend_ttl(1000, 10000);
+        Ok(())
     }
 
     /// Emergency refund to the depositor after the unlock timestamp.
@@ -264,7 +278,17 @@ mod tests {
         Address, Env,
     };
 
-    fn setup(custom_issuer: Option<Address>) -> (Env, Address, Address, Address, Address, EscrowContractClient<'static>) {
+    const MINT_AMOUNT: i128 = 1_000_000;
+
+    fn setup() -> (
+        Env,
+        Address,
+        Address,
+        Address,
+        Address,
+        Address,
+        EscrowContractClient<'static>,
+    ) {
         let env = Env::default();
         env.mock_all_auths();
 
@@ -274,8 +298,8 @@ mod tests {
         let fee_recipient = Address::generate(&env);
 
         // Deploy a test SAC token.
-        let token_admin = custom_issuer.unwrap_or_else(|| Address::generate(&env));
-        let token_id = env.register_stellar_asset_contract_v2(token_admin.clone());
+        let token_admin = Address::generate(&env);
+        let token_id = env.register_stellar_asset_contract_v2(token_admin);
         StellarAssetClient::new(&env, &token_id.address()).mint(&depositor, &MINT_AMOUNT);
 
         let contract_id = env.register(EscrowContract, ());
@@ -292,21 +316,6 @@ mod tests {
         )
     }
 
-    /// Advance the mock ledger sequence by `delta`.
-    fn advance_ledger(env: &Env, delta: u32) {
-        let current = env.ledger().sequence();
-        env.ledger().set(LedgerInfo {
-            protocol_version: 25,
-            sequence_number: current + delta,
-            timestamp: env.ledger().timestamp() + (delta as u64 * 5),
-            network_id: Default::default(),
-            base_reserve: 5_000_000,
-            min_persistent_entry_ttl: 4096,
-            min_temp_entry_ttl: 16,
-            max_entry_ttl: 9_999_999,
-        });
-    }
-
     // Helper: initialise with common defaults
     fn init(
         client: &EscrowContractClient,
@@ -319,19 +328,17 @@ mod tests {
         fee_bps: u32,
         fee_recipient: &Address,
     ) {
-        client
-            .try_initialize(
-                depositor,
-                beneficiary,
-                arbiter,
-                token,
-                &amount,
-                &lock_until_ledger,
-                &fee_bps,
-                fee_recipient,
-            )
-            .expect("initialize should succeed")
-            .expect("initialize returned error");
+        client.initialize(
+            depositor,
+            beneficiary,
+            arbiter,
+            token,
+            &amount,
+            &1_000, // emergency_unlock_timestamp
+            &lock_until_ledger,
+            &fee_bps,
+            fee_recipient,
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -340,7 +347,7 @@ mod tests {
 
     #[test]
     fn test_initialize_and_release() {
-        let (env, depositor, beneficiary, arbiter, token, client) = setup(None);
+        let (env, depositor, beneficiary, arbiter, fee_recipient, token, client) = setup();
         let amount: i128 = 500_000;
         let emergency_unlock_timestamp = 1_000;
 
@@ -353,8 +360,12 @@ mod tests {
             &token,
             &amount,
             &emergency_unlock_timestamp,
+            &100, // lock_until_ledger
+            &0, // fee_bps
+            &fee_recipient,
         );
 
+        let state = client.get_state();
         assert_eq!(state.amount, amount);
         assert_eq!(state.emergency_unlock_timestamp, emergency_unlock_timestamp);
         assert!(!state.released);
@@ -373,10 +384,7 @@ mod tests {
 
         init(&client, &depositor, &beneficiary, &arbiter, &token, amount, 100, fee_bps, &fee_recipient);
 
-        client
-            .try_release()
-            .expect("try_release panicked")
-            .expect("release returned error");
+        client.release();
 
         let tc = TokenClient::new(&env, &token);
         let expected_fee = amount * fee_bps as i128 / 10_000;
@@ -385,10 +393,7 @@ mod tests {
         assert_eq!(tc.balance(&beneficiary), expected_net);
         assert_eq!(tc.balance(&fee_recipient), expected_fee);
 
-        let state = client
-            .try_get_state()
-            .expect("try_get_state panicked")
-            .expect("get_state returned error");
+        let state = client.get_state();
         assert!(state.released);
     }
 
@@ -399,10 +404,7 @@ mod tests {
 
         init(&client, &depositor, &beneficiary, &arbiter, &token, amount, 50, 0, &fee_recipient);
 
-        client
-            .try_release()
-            .expect("try_release panicked")
-            .expect("release returned error");
+        client.release();
 
         let tc = TokenClient::new(&env, &token);
         // Full amount goes to beneficiary; fee_recipient receives nothing.
@@ -412,7 +414,7 @@ mod tests {
 
     #[test]
     fn test_refund() {
-        let (env, depositor, beneficiary, arbiter, token, client) = setup(None);
+        let (env, depositor, beneficiary, arbiter, fee_recipient, token, client) = setup();
         let amount: i128 = 200_000;
         let emergency_unlock_timestamp = 1_000;
 
@@ -425,19 +427,19 @@ mod tests {
             &token,
             &amount,
             &emergency_unlock_timestamp,
+            &100, // lock_until_ledger
+            &0, // fee_bps
+            &fee_recipient,
         );
         client.refund();
 
-        let state = client
-            .try_get_state()
-            .expect("try_get_state panicked")
-            .expect("get_state returned error");
+        let state = client.get_state();
         assert!(state.released);
     }
 
     #[test]
     fn test_emergency_refund() {
-        let (env, depositor, beneficiary, arbiter, token, client) = setup();
+        let (env, depositor, beneficiary, arbiter, fee_recipient, token, client) = setup();
         let amount: i128 = 300_000;
         let emergency_unlock_timestamp = 1_000;
 
@@ -450,6 +452,9 @@ mod tests {
             &token,
             &amount,
             &emergency_unlock_timestamp,
+            &100, // lock_until_ledger
+            &0, // fee_bps
+            &fee_recipient,
         );
 
         env.ledger().set_timestamp(emergency_unlock_timestamp);
@@ -457,7 +462,7 @@ mod tests {
         client.emergency_refund();
 
         let token_client = TokenClient::new(&env, &token);
-        assert_eq!(token_client.balance(&depositor), 1_000_000);
+        assert_eq!(token_client.balance(&depositor), MINT_AMOUNT);
         assert!(client.get_state().released);
     }
 }

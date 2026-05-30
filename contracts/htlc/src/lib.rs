@@ -73,7 +73,7 @@ impl HtlcContract {
         assert!(!state.refunded, "already refunded");
 
         // Verify the hash of the preimage matches the hashlock
-        let hash = env.crypto().sha256(&preimage.into());
+        let hash: BytesN<32> = env.crypto().sha256(&preimage.into()).into();
         assert!(hash == state.hashlock, "invalid preimage");
 
         // Transfer funds to the receiver
@@ -148,7 +148,7 @@ mod tests {
         let amount: i128 = 500_000;
         
         let preimage = BytesN::from_array(&env, &[1; 32]);
-        let hashlock = env.crypto().sha256(&preimage.clone().into());
+        let hashlock: BytesN<32> = env.crypto().sha256(&preimage.clone().into()).into();
         let timelock = 1000;
         
         env.ledger().set_timestamp(100);
@@ -172,7 +172,7 @@ mod tests {
         let amount: i128 = 500_000;
         
         let preimage = BytesN::from_array(&env, &[1; 32]);
-        let hashlock = env.crypto().sha256(&preimage.clone().into());
+        let hashlock: BytesN<32> = env.crypto().sha256(&preimage.clone().into()).into();
         let timelock = 1000;
         
         env.ledger().set_timestamp(100);

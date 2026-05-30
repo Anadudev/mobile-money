@@ -72,6 +72,9 @@
                   "i128": "500000"
                 },
                 {
+                  "u64": "1000"
+                },
+                {
                   "u32": 100
                 },
                 {
@@ -289,6 +292,14 @@
                             },
                             "val": {
                               "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM"
+                            }
+                          },
+                          {
+                            "key": {
+                              "symbol": "emergency_unlock_timestamp"
+                            },
+                            "val": {
+                              "u64": "1000"
                             }
                           },
                           {
