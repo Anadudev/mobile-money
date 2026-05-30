@@ -2244,7 +2244,7 @@ export class AccountingService {
       provider: string;
       createdAt: Date;
     },
-    mappings: CategoryMapping[]
+    mappings: CategoryMapping[],
   ): Promise<void> {
     const connectionData = await this.getConnection(connection.id);
     const txnDate = transaction.createdAt.toISOString().split("T")[0];
@@ -2304,7 +2304,7 @@ export class AccountingService {
           "Xero-tenant-id": connectionData!.tenantId,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 
@@ -2320,7 +2320,7 @@ export class AccountingService {
       referenceNumber: string;
       provider: string;
       createdAt: Date;
-    }
+    },
   ): Promise<void> {
     const freshConnection = await this.getConnection(connection.id);
     const txnDate = transaction.createdAt.toISOString().split("T")[0];
@@ -2351,12 +2351,17 @@ export class AccountingService {
           "Xero-tenant-id": freshConnection!.tenantId,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 
-  private getMappedCategory(mappings: CategoryMapping[], mobileMoneyCategory: string): string | null {
-    const mapping = mappings.find(m => m.mobileMoneyCategory === mobileMoneyCategory);
+  private getMappedCategory(
+    mappings: CategoryMapping[],
+    mobileMoneyCategory: string,
+  ): string | null {
+    const mapping = mappings.find(
+      (m) => m.mobileMoneyCategory === mobileMoneyCategory,
+    );
     return mapping ? mapping.accountingCategoryId : null;
   }
 
@@ -2428,7 +2433,10 @@ export class AccountingService {
         } else if (connection.provider === AccountingProvider.XERO) {
           if (transaction.type === "withdraw") {
             const mappings = await this.getCategoryMappings(connection.id);
-            const withdrawalAccountId = this.getMappedCategory(mappings, "withdrawal");
+            const withdrawalAccountId = this.getMappedCategory(
+              mappings,
+              "withdrawal",
+            );
 
             if (withdrawalAccountId) {
               await this.syncWithdrawalToXeroBill(fresh, transaction, mappings);
