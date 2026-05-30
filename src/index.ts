@@ -1,5 +1,5 @@
 // Initialize centralized configuration first
-import './config/init';
+import "./config/init";
 
 import "./tracer";
 import path from "path";
@@ -89,8 +89,9 @@ import reconciliationRoutes from "./routes/reconciliation";
 import exchangeRateBufferRoutes from "./routes/exchangeRateBuffers";
 import adminAssetRoutes from "./routes/admin/assets";
 import settingsRoutes from "./routes/settings";
-
-
+import { paymentLinkRoutes } from "./routes/paymentLinkRoutes";
+import providerStatusRouter from "./routes/providerStatus";
+import { startApolloServer } from "./graphql/server";
 
 // 1. Import Sentry Middleware
 import { initSentry, sentryBreadcrumbMiddleware } from "./middleware/sentry";
@@ -378,8 +379,7 @@ app.use("/api/reconciliation", reconciliationRoutes);
 app.use("/api/exchange-rate-buffers", exchangeRateBufferRoutes);
 app.use("/api/admin/assets", adminAssetRoutes);
 app.use("/api/settings", settingsRoutes);
-
-
+app.use(paymentLinkRoutes);
 
 // GDPR
 app.use("/api/gdpr", privacyRoutes);
