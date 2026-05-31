@@ -56,7 +56,9 @@
     "docs:dev": "npm --prefix docs-portal run start",
     "docs:build": "npm --prefix docs-portal run build",
     "test:load:ingestion-10k": "k6 run --vus-max 12000 -e SCENARIO=ingestion_10k tests/load/api.js",
-    "test:load:spike-10k": "k6 run --vus-max 12000 -e SCENARIO=spike_10k tests/load/api.js"
+    "test:load:spike-10k": "k6 run --vus-max 12000 -e SCENARIO=spike_10k tests/load/api.js",
+    "test:load:traffic-spike": "k6 run --vus-max 6000 -e SCENARIO=traffic_spike tests/load/api.js",
+    "test:load:spike-5k": "k6 run --vus-max 6000 -e SCENARIO=spike_5k tests/load/api.js"
   },
   "lint-staged": {
     "*.{ts,tsx,js,cjs,mjs,json,md,yml,yaml}": "prettier --write"
