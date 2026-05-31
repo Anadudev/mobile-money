@@ -44,7 +44,8 @@ docsRouter.get('/openapi.json', devOnly, (_req: Request, res: Response) => {
 // generated — satisfying the "auto-update on server restart" requirement.
 
 if (isDev) {
-  const spec = generateOpenAPIDocument();
+  // Generate spec for local use; can be overridden by external URL via SWAGGER_SPEC_URL
+  const localSpec = generateOpenAPIDocument();
 
   // Determine whether to serve Swagger UI assets via CDN or locally based on environment variable
   // Use CDN for Swagger UI assets unless explicitly disabled via SWAGGER_CDN='false'
@@ -68,7 +69,8 @@ if (isDev) {
     '/',
     devOnly,
     swaggerUi.serve,
-    swaggerUi.setup(spec, swaggerOptions)
+    // Use external spec URL if provided, otherwise fallback to generated spec
+    swaggerUi.setup(process.env.SWAGGER_SPEC_URL ? { url: process.env.SWAGGER_SPEC_URL } : localSpec, swaggerOptions)
   );
 } else {
   // In non-dev environments the route still exists but devOnly will 404 it.

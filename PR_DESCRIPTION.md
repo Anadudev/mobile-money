@@ -1,34 +1,28 @@
-# Pull Request Description
+# PR Description
 
-**Title:** `feat: serve Swagger UI assets via CDN`
+## Summary
+The Swagger UI integration now serves its static assets (CSS & JavaScript) from the **jsDelivr CDN** by default, improving documentation load performance. Set `SWAGGER_CDN='false'` to revert to local assets if needed.
 
-### 📖 Summary
-Implemented serving of Swagger UI assets from a public CDN (jsDelivr) instead of local static files. This reduces bundle size, speeds up documentation load times, and simplifies deployment by removing the need to serve Swagger UI static assets.
+## Changes Made
+- **File Modified:** `src/routes/docs.ts`
+  ```ts
+  // Previously:
+  const useCdn = process.env.SWAGGER_CDN === 'true';
+  // Updated to:
+  // Use CDN for Swagger UI assets unless explicitly disabled via SWAGGER_CDN='false'
+  const useCdn = process.env.SWAGGER_CDN !== 'false';
+  ```
+- The new logic defaults to using the CDN unless `SWAGGER_CDN` is explicitly set to `'false'`.
 
-### 🛠️ Changes
-| File | Modification |
-|------|--------------|
-| `src/routes/docs.ts` | - Removed `swaggerUi.serve` middleware.
-| | - Added `customCssUrl` and `customJs` options pointing to CDN URLs.
-| | - Updated comments to reflect CDN usage.
+## Impact
+- **Performance:** Faster loading of the Swagger UI documentation in development and production.
+- **Compatibility:** Existing environments that rely on local assets can retain that behavior by setting `SWAGGER_CDN='false'`.
+- **Scope:** No other files or functionality were modified.
 
-### ✅ Verification
-- **Local Development:** Run the server in development mode and navigate to `/docs`. Swagger UI loads correctly with assets fetched from CDN.
-- **Production Build:** Build the application (`npm run build`) and start the server in production mode. The `/docs` endpoint still returns a 404 as expected, preserving the dev-only guard.
-- **Network Inspection:** Confirm that CSS and JS are loaded from `https://cdn.jsdelivr.net/npm/swagger-ui-dist/...`.
+## Testing
+1. Run the application in development mode with the default configuration; Swagger UI should load assets from `https://cdn.jsdelivr.net/npm/swagger-ui-dist/...`.
+2. Set `SWAGGER_CDN='false'` and verify that the UI falls back to local assets.
+3. All existing test suites pass (`npm test`).
 
-### 📈 Impact
-- **Performance:** Faster initial load of API documentation due to CDN caching and reduced server payload.
-- **Maintenance:** No need to manage local Swagger UI static files; updates to the UI are automatically obtained via CDN.
-- **Security:** Using a reputable CDN (jsDelivr) ensures integrity via subresource integrity (SRI) checks can be added in the future.
-
-### 📦 Release Notes
-- Swagger UI now served via CDN in development environments.
-- No functional changes to the OpenAPI spec generation.
-
----
-
-**How to Merge**
-1. Review the changes.
-2. Ensure CI passes (`npm test`).
-3. Merge into `main`.
+## Upstream
+The branch `standardize-mock-assertions` now tracks `origin/standardize-mock-assertions` and has been pushed.
