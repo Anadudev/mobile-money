@@ -149,6 +149,9 @@ export const sep24RateLimiter = async (req: Request, res: Response, next: NextFu
   res.setHeader("X-RateLimit-Reset", new Date(resetTime).toISOString());
 
   if (!allowed) {
+    const retryAfterSeconds = Math.ceil((resetTime - Date.now()) / 1000);
+    res.setHeader("Retry-After", String(retryAfterSeconds));
+
     logHighSeverity("SEP-24 rate limit exceeded", {
       userId,
       limit: RATE_LIMIT_CONFIG.SEP24_LIMIT,
@@ -159,7 +162,7 @@ export const sep24RateLimiter = async (req: Request, res: Response, next: NextFu
 
     return res.status(429).json({
       error: "Rate limit exceeded for SEP-24 operations",
-      retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
+      retryAfter: retryAfterSeconds,
     });
   }
 
@@ -326,6 +329,9 @@ export const sep31RateLimiter = async (req: Request, res: Response, next: NextFu
   res.setHeader("X-RateLimit-Reset", new Date(resetTime).toISOString());
 
   if (!allowed) {
+    const retryAfterSeconds = Math.ceil((resetTime - Date.now()) / 1000);
+    res.setHeader("Retry-After", String(retryAfterSeconds));
+
     logHighSeverity("SEP-31 rate limit exceeded", {
       userId,
       limit: RATE_LIMIT_CONFIG.SEP31_LIMIT,
@@ -336,7 +342,7 @@ export const sep31RateLimiter = async (req: Request, res: Response, next: NextFu
 
     return res.status(429).json({
       error: "Rate limit exceeded for SEP-31 operations",
-      retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
+      retryAfter: retryAfterSeconds,
     });
   }
 
@@ -367,6 +373,9 @@ export const sep12RateLimiter = async (req: Request, res: Response, next: NextFu
   res.setHeader("X-RateLimit-Reset", new Date(resetTime).toISOString());
 
   if (!allowed) {
+    const retryAfterSeconds = Math.ceil((resetTime - Date.now()) / 1000);
+    res.setHeader("Retry-After", String(retryAfterSeconds));
+
     logHighSeverity("SEP-12 rate limit exceeded", {
       userId,
       limit: RATE_LIMIT_CONFIG.SEP12_LIMIT,
@@ -377,7 +386,7 @@ export const sep12RateLimiter = async (req: Request, res: Response, next: NextFu
 
     return res.status(429).json({
       error: "Rate limit exceeded for SEP-12 operations",
-      retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
+      retryAfter: retryAfterSeconds,
     });
   }
 
@@ -413,6 +422,9 @@ export const rateLimitExport = async (
   res.setHeader("X-RateLimit-Reset", new Date(resetTime).toISOString());
 
   if (!allowed) {
+    const retryAfterSeconds = Math.ceil((resetTime - Date.now()) / 1000);
+    res.setHeader("Retry-After", String(retryAfterSeconds));
+
     logHighSeverity("Export rate limit exceeded", {
       userId,
       limit: RATE_LIMIT_CONFIG.EXPORT_LIMIT,
@@ -424,7 +436,7 @@ export const rateLimitExport = async (
     return res.status(429).json({
       message: "Rate limit exceeded for exports",
       error: "TOO_MANY_EXPORT_REQUESTS",
-      retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
+      retryAfter: retryAfterSeconds,
       resetTime: new Date(resetTime).toISOString(),
     });
   }
