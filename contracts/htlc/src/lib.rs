@@ -322,9 +322,7 @@ mod tests {
         let mut signers: Vec<Address> = Vec::new(&env);
         signers.push_back(signer1.clone());
         
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            client.claim(&preimage, &signers);
-        }));
+        let result = client.try_claim(&preimage, &signers);
         assert!(result.is_err(), "claim should fail with insufficient signatures");
     }
 
@@ -355,9 +353,7 @@ mod tests {
         let mut signers: Vec<Address> = Vec::new(&env);
         signers.push_back(unapproved_signer);
         
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            client.claim(&preimage, &signers);
-        }));
+        let result = client.try_claim(&preimage, &signers);
         assert!(result.is_err(), "claim should fail with unapproved signer");
     }
 
@@ -383,9 +379,7 @@ mod tests {
         // Try to initialize with required_signatures > approved_signers.len()
         let required_signatures = 3u32; // More than available signers
         
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            client.initialize(&sender, &receiver, &token, &amount, &hashlock, &timelock, &approved_signers, &required_signatures);
-        }));
+        let result = client.try_initialize(&sender, &receiver, &token, &amount, &hashlock, &timelock, &approved_signers, &required_signatures);
         assert!(result.is_err(), "initialize should fail with invalid required_signatures");
     }
 
@@ -407,9 +401,7 @@ mod tests {
         // Try to refund exactly one second before timelock
         env.ledger().set_timestamp(999);
 
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            client.refund();
-        }));
+        let result = client.try_refund();
         assert!(result.is_err(), "refund should fail before timelock expires");
     }
 

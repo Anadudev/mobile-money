@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '..');
-const wasmPath = path.resolve(repoRoot, 'contracts', 'target', 'wasm32-unknown-unknown', 'release', 'escrow.wasm');
+const wasmPath = path.resolve(repoRoot, 'contracts', 'target', 'wasm32v1-none', 'release', 'escrow.wasm');
 const methods = ['initialize', 'release', 'refund', 'emergency_refund', 'get_state'];
 const networkName = process.env.SOROBAN_NETWORK || 'local';
 const rpcUrl = process.env.SOROBAN_RPC_URL || '';
